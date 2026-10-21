@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StartCity Document Studio &mdash; Penalty Point Removal Letter</title>
+
+<style>
+/* ==========================================================================
+   StartCity Document Studio
+   1 tokens · 2 reset · 3 app shell · 4 editor · 5 preview/sheet · 6 letter
+   7 watermarks · 8 responsive · 9 print
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+:root{
+  --green:#0b6b3a;
+  --green-dark:#075c31;
+  --green-tint:#eaf4ee;
+  --brand-green:#046a38;
+
+  --ink:#16181a;
+  --ink-soft:#33373a;
+  --muted:#5f6569;
+
+  --line:#d5d8d6;
+  --line-dark:#9aa09c;
+  --fill:#f1f2f1;
+
+  --app-bg:#eef3f0;
+
+  --sheet-w:210mm;
+  --sheet-h:297mm;
+
+  --fs-body:14px;
+  --fs-small:12px;
+  --radius:10px;
+}
+
+/* ---------- 2. Reset ---------- */
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0;
+  background:var(--app-bg);
+  color:var(--ink);
+  font-family:"Segoe UI","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ol,ul,table{ margin:0; }
+img{ display:block; max-width:100%; }
+
+/* ---------- 3. App shell ---------- */
+.app-header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px 24px;
+  color:#fff;
+  background:linear-gradient(180deg,var(--green),var(--green-dark));
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+}
+.app-brand-logo{ height:30px; width:auto; object-fit:contain; }
+.app-title{ font-size:16px; font-weight:650; letter-spacing:.2px; }
+.app-subtitle{ margin-top:2px; font-size:11.5px; opacity:.82; }
+
+.app-body{
+  display:grid;
+  grid-template-columns:400px minmax(0,1fr);
+  gap:22px;
+  align-items:start;
+  max-width:1460px;
+  margin:0 auto;
+  padding:22px;
+}
+
+/* ---------- 4. Editor ---------- */
+.editor{
+  background:#fff;
+  border:1px solid #c8d8cd;
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:0 1px 3px rgba(16,32,24,.06);
+}
+.editor h2{ font-size:14px; font-weight:650; }
+.editor .hint{ margin:4px 0 16px; font-size:11.5px; color:var(--muted); }
+
+.field{ margin-bottom:12px; }
+.field label{
+  display:block;
+  margin-bottom:5px;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.field input,
+.field textarea{
+  width:100%;
+  padding:8px 10px;
+  font:inherit;
+  font-size:12.5px;
+  color:var(--ink);
+  background:#fbfdfb;
+  border:1px solid #c8d8cd;
+  border-radius:7px;
+}
+.field textarea{ min-height:80px; resize:vertical; line-height:1.45; }
+.field input:focus,
+.field textarea:focus{
+  outline:2px solid rgba(11,107,58,.22);
+  border-color:var(--green);
+  background:#fff;
+}
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.group-label{
+  margin:16px 0 10px;
+  padding-top:12px;
+  border-top:1px solid #d8e2db;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--green-dark);
+}
+
+.editor-actions{
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid #d8e2db;
+}
+.btn{
+  flex:1;
+  padding:9px 14px;
+  font:inherit;
+  font-size:12.5px;
+  font-weight:600;
+  border:1px solid transparent;
+  border-radius:8px;
+  cursor:pointer;
+}
+.btn-primary{ background:var(--green); color:#fff; }
+.btn-primary:hover{ background:var(--green-dark); }
+.btn-primary[disabled]{ opacity:.65; cursor:progress; }
+.btn-ghost{ background:#fff; color:var(--ink); border-color:#c8d8cd; }
+.btn-ghost:hover{ background:var(--green-tint); }
+
+/* ---------- 5. Preview + A4 sheets ---------- */
+.preview{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  min-width:0;
+  padding-bottom:16px;
+}
+.preview-note{ font-size:11.5px; color:var(--muted); text-align:center; }
+
+.sheet{
+  position:relative;
+  overflow:hidden;
+  width:var(--sheet-w);
+  min-height:var(--sheet-h);
+  flex:0 0 auto;
+  margin:0 auto;
+  background:#fff;
+  border:1px solid #dfe5e1;
+  border-radius:2px;
+  box-shadow:0 6px 24px rgba(16,32,24,.14);
+}
+.sheet.is-exporting{ border:0; border-radius:0; box-shadow:none; }
+
+/* ---------- 6. The letter ---------- */
+.document{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  min-height:var(--sheet-h);
+  padding:2.5mm 11mm;
+  font-size:var(--fs-body);
+  line-height:1.35;
+  color:var(--ink);
+}
+
+/* Header */
+.doc-header{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:16px;
+  padding-bottom:5px;
+}
+.brand{ display:flex; align-items:center; gap:14px; min-width:0; }
+.logo{ height:94px; width:auto; max-width:180px; object-fit:contain; }
+.identity-name{
+  font-size:24px;
+  font-weight:700;
+  line-height:1.14;
+  letter-spacing:-.3px;
+  color:#111;
+}
+.office-details{
+  font-size:var(--fs-small);
+  line-height:1.3;
+  text-align:right;
+  white-space:pre-line;
+  color:var(--ink-soft);
+}
+.doc-rule{
+  height:3px;
+  margin:0 0 6px;
+  border:0;
+  background:#1a1a1a;
+}
+
+/* Address + metadata */
+.split{
+  display:grid;
+  grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+  gap:0 24px;
+  margin-bottom:6px;
+}
+.address{
+  font-size:var(--fs-body);
+  font-weight:700;
+  line-height:1.55;
+  white-space:pre-line;
+}
+.meta-list{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  column-gap:14px;
+  row-gap:0;
+}
+.meta-key{
+  text-align:right;
+  white-space:nowrap;
+  font-weight:700;
+  color:var(--ink);
+}
+.meta-val{ font-weight:700; overflow-wrap:anywhere; }
+
+/* Body */
+.salutation{ margin-bottom:6px; }
+.doc-title{
+  font-size:21px;
+  font-weight:700;
+  line-height:1.2;
+  letter-spacing:-.2px;
+  margin-bottom:10px;
+}
+.doc-body p{ margin-bottom:6px; overflow-wrap:anywhere; }
+.doc-body p:last-child{ margin-bottom:0; }
+
+/* Grey status table */
+.status-table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--fill);
+  margin:14px 0 7px;
+}
+.status-table th{
+  width:29%;
+  padding:5px 12px;
+  text-align:left;
+  vertical-align:top;
+  font-size:var(--fs-body);
+  font-weight:700;
+  border-bottom:1px solid #fff;
+}
+.status-table td{
+  padding:5px 12px;
+  vertical-align:top;
+  border-bottom:1px solid #fff;
+}
+.status-table tr:last-child th,
+.status-table tr:last-child td{ border-bottom:0; }
+.status-table .status-head{ display:block; font-weight:700; margin-bottom:1px; }
+
+/* Section headings — text sits clear ABOVE the rule */
+.section-head{
+  font-size:15.5px;
+  font-weight:700;
+  letter-spacing:-.1px;
+  padding-bottom:2px;
+  margin:0 0 5px;
+  border-bottom:1px solid var(--line-dark);
+}
+
+/* Payment / bank table */
+.pay-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:7px;
+}
+.pay-table th{
+  width:31%;
+  padding:1.5px 11px;
+  text-align:left;
+  vertical-align:top;
+  font-weight:700;
+  background:var(--fill);
+  border:1px solid var(--line);
+}
+.pay-table td{
+  padding:1.5px 11px;
+  vertical-align:top;
+  border:1px solid var(--line);
+  overflow-wrap:anywhere;
+}
+.pay-table .mono{ letter-spacing:.06em; }
+
+/* Numbered list */
+.steps{
+  margin:0 0 4px;
+  padding-left:30px;
+  font-size:var(--fs-body);
+  line-height:1.35;
+}
+.steps li{ margin-bottom:0; padding-left:5px; }
+
+.note{ margin-bottom:4px; line-height:1.35; }
+
+/* Page 2 continuation marker */
+.cont-line{
+  font-size:var(--fs-small);
+  color:var(--ink-soft);
+  margin-bottom:10px;
+}
+
+/* Page 2 prose */
+.page2 p{ margin-bottom:6px; overflow-wrap:anywhere; }
+.page2 p:last-child{ margin-bottom:0; }
+
+/* Signature */
+.signature{ margin-top:2px; font-size:14px; line-height:1.45; }
+.sign-image{
+  display:block;
+  width:320px;
+  height:80px;
+  object-fit:contain;
+  object-position:left center;
+  margin-bottom:6px;
+}
+.signature .sign-name{ font-size:15.5px; font-weight:700; }
+.signature .sign-org{ font-size:14px; font-weight:600; color:var(--ink); }
+
+/* Footer */
+.doc-footer{
+  margin-top:auto;
+  padding-top:4px;
+  border-top:1px solid var(--line-dark);
+}
+.footer-row{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  font-size:10px;
+  line-height:1.35;
+  color:var(--ink-soft);
+}
+.footer-row .right{ text-align:right; white-space:nowrap; }
+
+/* ---------- 7. Watermarks (both behind the text, on every page) ---------- */
+
+/* 7a. Coat of arms, centred lower half */
+.watermark{
+  position:absolute;
+  left:50%;
+  top:60%;
+  transform:translate(-50%,-50%);
+  width:70%;
+  height:auto;
+  opacity:.05;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* 7b. Thick DVLA text tiled on a slant across the whole page */
+.watermark-text{
+  position:absolute;
+  inset:-40%;
+  z-index:0;
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  grid-auto-rows:1fr;
+  place-items:center;
+  transform:rotate(-30deg);
+  pointer-events:none;
+}
+.watermark-text span{
+  font-size:30px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--brand-green);
+  opacity:.06;
+  white-space:nowrap;
+  user-select:none;
+}
+
+/* ---------- 8. Responsive ---------- */
+@media (max-width:1080px){
+  .app-body{ grid-template-columns:1fr; gap:18px; }
+}
+@media (max-width:620px){
+  .app-header{ padding:10px 16px; }
+  .app-body{ padding:14px; }
+  .field-row{ grid-template-columns:1fr; }
+  .preview{ overflow-x:auto; align-items:flex-start; }
+  .preview-note{ text-align:left; }
+  .sheet{ margin:0; }
+}
+
+/* ---------- 9. Print (fallback path) ---------- */
+@page{ size:A4 portrait; margin:0; }
+@media print{
+  html,body{ background:#fff; }
+  .app-header,.editor,.preview-note{ display:none; }
+  .app-body{ display:block; margin:0; padding:0; max-width:none; }
+  .preview{ display:block; padding:0; overflow:visible; }
+  .sheet{
+    width:210mm; min-height:297mm; margin:0;
+    border:0; border-radius:0; box-shadow:none;
+    break-after:page;
+  }
+  .sheet:last-child{ break-after:auto; }
+  .document{ padding:2.5mm 11mm; }
+  .status-table,.pay-table,.signature,.doc-footer,.split{ break-inside:avoid; }
+  *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ======================= APP HEADER ======================= -->
+<header class="app-header">
+  <img class="app-brand-logo" src="startcity.png" alt="">
+  <div>
+    <h1 class="app-title">StartCity Document Studio</h1>
+    <p class="app-subtitle">Live A4 letter editor &amp; one-click PDF download</p>
+  </div>
+</header>
+
+<main class="app-body">
+
+  <!-- ======================= EDITOR ======================= -->
+  <section class="editor" aria-label="Document details editor">
+    <h2>Document details</h2>
+    <p class="hint">Edit any field &mdash; both pages update instantly.</p>
+
+    <div class="field">
+      <label for="f-reference">Our reference</label>
+      <input id="f-reference" data-bind="refMeta refPayment refPage2 refBank" value="DVLA/RR/2026/004318">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-date">Date of issue</label>
+        <input id="f-date" data-bind="dateMeta" value="18 October 2026">
+      </div>
+      <div class="field">
+        <label for="f-deadline">Payment deadline</label>
+        <input id="f-deadline" data-bind="deadlineValue deadlinePage2" value="1 November 2026">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-applicant">Applicant</label>
+        <input id="f-applicant" data-bind="applicantMeta applicantGreeting" value="Jordan Example">
+      </div>
+      <div class="field">
+        <label for="f-licence">Driving licence number</label>
+        <input id="f-licence" data-bind="licenceMeta" value="EXAM912345JX9">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-points">Penalty points</label>
+      <input id="f-points" data-bind="pointsMeta pointsBody pointsStatus" value="6">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-submitter">Submitted by</label>
+        <input id="f-submitter" data-bind="submitterMeta submitterBody submitterPage2 submitterAccount" value="Gareth Drummond">
+      </div>
+      <div class="field">
+        <label for="f-role">Role</label>
+        <input id="f-role" data-bind="roleMeta roleBody" value="Internal Security Review Officer">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-contact">Contact</label>
+      <input id="f-contact" data-bind="contactMeta" value="reviewrequests@dvia.gov.uk">
+    </div>
+
+    <p class="group-label">Amounts</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-fee">Review fee</label>
+        <input id="f-fee" data-bind="feeBody feeStatus feeAmount feePage2 feeSteps" value="£500.00">
+      </div>
+      <div class="field">
+        <label for="f-fine">Outstanding fine</label>
+        <input id="f-fine" data-bind="fineMeta fineAmount finePage2" value="£200.00">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-status">Current status</label>
+      <input id="f-status" data-bind="statusHeadline" value="Review approved &ndash; payment required">
+    </div>
+
+    <p class="group-label">Bank details &mdash; Luxembourg</p>
+
+    <div class="field">
+      <label for="f-bank">Bank</label>
+      <input id="f-bank" data-bind="bankName" value="Banque Internationale à Luxembourg">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-bic">BIC / SWIFT</label>
+        <input id="f-bic" data-bind="bicCode" value="BILLLULL">
+      </div>
+      <div class="field">
+        <label for="f-iban">IBAN</label>
+        <input id="f-iban" data-bind="ibanNumber" value="LU28 0019 4006 4475 0000">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-bankcountry">Bank country</label>
+      <input id="f-bankcountry" data-bind="bankCountry" value="Luxembourg">
+    </div>
+
+    <p class="group-label">Sign-off</p>
+
+    <div class="field">
+      <label for="f-signer">Signed by</label>
+      <input id="f-signer" data-bind="signName" value="Arthur William Wright">
+    </div>
+
+    <div class="field">
+      <label for="f-address">Applicant address</label>
+      <textarea id="f-address" data-bind="addressValue" rows="4">Jordan Example
+12 Oakwood Close
+Bristol
+BS8 4PL</textarea>
+    </div>
+
+    <div class="editor-actions">
+      <button type="button" class="btn btn-primary" id="btn-pdf">Download PDF</button>
+      <button type="button" class="btn btn-ghost" id="btn-reset">Reset</button>
+    </div>
+  </section>
+
+  <!-- ======================= LIVE PREVIEW ======================= -->
+  <section class="preview" aria-label="Live letter preview">
+    <p class="preview-note">Live A4 preview &mdash; 2 pages, 210 &times; 297 mm portrait</p>
+
+    <!-- ============================ PAGE 1 ============================ -->
+    <article class="sheet" id="sheet-1">
+      <img class="watermark" src="startcity.png" alt="" aria-hidden="true">
+      <div class="watermark-text" aria-hidden="true"></div>
+
+      <div class="document">
+
+        <header class="doc-header">
+          <div class="brand">
+            <img class="logo" src="startcity.png" alt="StartCity">
+            <h2 class="identity-name">Driver &amp; Vehicle<br>Licensing Agency</h2>
+          </div>
+          <div class="office-details">Driver &amp; Vehicle Licensing Agency
+Longview Road
+Swansea
+SA6 7JL
+United Kingdom.
+
+dvia.gov.uk</div>
+        </header>
+
+        <hr class="doc-rule">
+
+        <div class="split">
+          <div class="address" id="addressValue">Jordan Example
+12 Oakwood Close
+Bristol
+BS8 4PL</div>
+
+          <div class="meta-list">
+            <span class="meta-key">Our reference:</span>
+            <span class="meta-val" id="refMeta">DVLA/RR/2026/004318</span>
+
+            <span class="meta-key">Date of issue:</span>
+            <span class="meta-val" id="dateMeta">18 October 2026</span>
+
+            <span class="meta-key">Applicant:</span>
+            <span class="meta-val" id="applicantMeta">Jordan Example</span>
+
+            <span class="meta-key">Driving licence number:</span>
+            <span class="meta-val" id="licenceMeta">EXAM912345JX9</span>
+
+            <span class="meta-key">Penalty points:</span>
+            <span class="meta-val" id="pointsMeta">6</span>
+
+            <span class="meta-key">Outstanding fine:</span>
+            <span class="meta-val" id="fineMeta">£200.00</span>
+
+            <span class="meta-key">Submitted by:</span>
+            <span class="meta-val" id="submitterMeta">Gareth Drummond</span>
+
+            <span class="meta-key">Role:</span>
+            <span class="meta-val" id="roleMeta">Internal Security Review Officer</span>
+
+            <span class="meta-key">Contact:</span>
+            <span class="meta-val" id="contactMeta">reviewrequests@dvia.gov.uk</span>
+          </div>
+        </div>
+
+        <p class="salutation">Dear <span id="applicantGreeting">Jordan Example</span>,</p>
+
+        <h1 class="doc-title">Approval of penalty point removal request &mdash; Payment required</h1>
+
+        <div class="doc-body">
+          <p>We are writing to inform you that the request submitted by
+             <span id="submitterBody">Gareth Drummond</span>,
+             <span id="roleBody">Internal Security Review Officer</span>, seeking removal of the
+             <span id="pointsBody">6</span> penalty points currently endorsed on your driving
+             record has been approved for formal review. We have assessed the supporting evidence
+             provided and consider that the case meets the criteria for further review.</p>
+
+          <p>Before the review process can be opened and a full assessment carried out, the
+             applicable review fee of <strong id="feeBody">£500.00</strong> must be paid. This fee
+             covers the administrative and case review costs associated with processing your
+             application. Full payment instructions are set out on page 2 of this notice.</p>
+        </div>
+
+        <table class="status-table">
+          <tbody>
+            <tr>
+              <th>Current status</th>
+              <td>
+                <span class="status-head" id="statusHeadline">Review approved &ndash; payment required</span>
+                Your request has been approved for formal review. The review process will begin
+                once the <span id="feeStatus">£500.00</span> fee has been received and cleared.
+              </td>
+            </tr>
+            <tr>
+              <th>Points on your licence</th>
+              <td>The <span id="pointsStatus">6</span> penalty points currently endorsed on your
+                  record remain in force until you receive a formal written decision from us.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 class="section-head">Payment details</h2>
+        <table class="pay-table">
+          <tbody>
+            <tr>
+              <th>Amount to pay</th>
+              <td><span id="feeAmount">£500.00</span> (Five Hundred Pounds)</td>
+            </tr>
+            <tr>
+              <th>Outstanding fine</th>
+              <td><span id="fineAmount">£200.00</span> &mdash; cancelled upon approval</td>
+            </tr>
+            <tr>
+              <th>Payment reference</th>
+              <td id="refPayment">DVLA/RR/2026/004318</td>
+            </tr>
+            <tr>
+              <th>Payment deadline</th>
+              <td id="deadlineValue">1 November 2026</td>
+            </tr>
+            <tr>
+              <th>Payment rules</th>
+              <td>Please read page 2 of this notice for full details.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 class="section-head">What happens next</h2>
+        <ol class="steps">
+          <li>Make the payment of <span id="feeSteps">£500.00</span> using the instructions on page 2.</li>
+          <li>Once the payment has been received and cleared, we will formally open your case for review.</li>
+          <li>A full assessment of the evidence will then be carried out.</li>
+          <li>We will write to you with the outcome and confirm whether the points have been removed.</li>
+        </ol>
+
+        <h2 class="section-head">If you do not pay</h2>
+        <p class="note">If the fee is not received by the deadline, your request may be closed, and
+           no further action will be taken. The penalty points would remain on your record and you
+           would need to submit a new request, including any supporting evidence, for consideration.</p>
+
+        <div class="signature">
+          <img class="sign-image" src="sign.png" alt="Signature">
+          <p class="sign-name" id="signName">Arthur William Wright</p>
+          <p class="sign-org">Driver &amp; Vehicle Licensing Agency</p>
+          <p class="sign-org">Swansea</p>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="footer-row">
+            <div>Driver &amp; Vehicle Licensing Agency is an executive agency of the Department for Transport.</div>
+            <div class="right">Page 1 of 2</div>
+          </div>
+        </footer>
+
+      </div><!-- /.document -->
+    </article>
+
+    <!-- ============================ PAGE 2 ============================ -->
+    <article class="sheet" id="sheet-2">
+      <img class="watermark" src="startcity.png" alt="" aria-hidden="true">
+      <div class="watermark-text" aria-hidden="true"></div>
+
+      <div class="document">
+
+        <header class="doc-header">
+          <div class="brand">
+            <img class="logo" src="startcity.png" alt="StartCity">
+            <h2 class="identity-name">Driver &amp; Vehicle<br>Licensing Agency</h2>
+          </div>
+          <div class="office-details">Driver &amp; Vehicle Licensing Agency
+Longview Road
+Swansea
+SA6 7JL
+United Kingdom.
+
+dvia.gov.uk</div>
+        </header>
+
+        <hr class="doc-rule">
+
+        <p class="cont-line">Continued from page 1 &middot; Reference
+           <span id="refPage2">DVLA/RR/2026/004318</span> &middot; Page 2 of 2</p>
+
+        <div class="page2">
+
+          <h2 class="section-head">Payment instructions</h2>
+          <p>Your payment must be deposited in the name of the named submitter shown on this
+             notice, <strong id="submitterPage2">Gareth Drummond</strong>. Deposits made under a
+             different name may not be matched to your case and could delay the review of your
+             request.</p>
+
+          <p>You must quote the payment reference shown in the table below on every deposit. The
+             account is held in <span id="bankCountry">Luxembourg</span>, so use the BIC and IBAN
+             shown. A missing reference may delay your request.</p>
+
+          <table class="pay-table">
+            <tbody>
+              <tr>
+                <th>Account name</th>
+                <td><span id="submitterAccount">Gareth Drummond</span> (named submitter)</td>
+              </tr>
+              <tr>
+                <th>Bank</th>
+                <td id="bankName">Banque Internationale à Luxembourg</td>
+              </tr>
+              <tr>
+                <th>BIC / SWIFT</th>
+                <td class="mono" id="bicCode">BILLLULL</td>
+              </tr>
+              <tr>
+                <th>IBAN</th>
+                <td class="mono" id="ibanNumber">LU28 0019 4006 4475 0000</td>
+              </tr>
+              <tr>
+                <th>Bank country</th>
+                <td id="bankCountryRow">Luxembourg</td>
+              </tr>
+              <tr>
+                <th>Amount to deposit</th>
+                <td><span id="feePage2">£500.00</span></td>
+              </tr>
+              <tr>
+                <th>Payment reference</th>
+                <td id="refBank">DVLA/RR/2026/004318</td>
+              </tr>
+              <tr>
+                <th>Payment deadline</th>
+                <td id="deadlinePage2">1 November 2026</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>Please keep the receipt or confirmation of your deposit. You may be asked to produce
+             it if the payment cannot be traced to your case.</p>
+
+          <h2 class="section-head">Outstanding fine</h2>
+          <p>A fine of <strong id="finePage2">£200.00</strong> is currently recorded against your
+             licence and is shown on page 1 of this notice. This fine is not payable as part of
+             this request. If your request is approved, the fine will also be lifted and cancelled
+             at the same time as the points are removed, and you will not need to do anything
+             further. If the request is not approved, the fine remains payable and you will be
+             told separately.</p>
+
+          <h2 class="section-head">Processing time</h2>
+          <p>Once your payment has been received and the reference verified, please allow up to
+             5 working days for the request to be approved and for your case to be formally opened.
+             The five-day period begins on the working day after the funds clear, not on the day
+             the payment is sent.</p>
+
+          <h2 class="section-head">Removal of points is not immunity</h2>
+          <p>Removing the penalty points does not make you immune to future penalties. This removal
+             clears the points covered by this request, but the ordinary rules continue to apply
+             from that point onwards. If you commit a further endorsable offence after the removal,
+             new points will be added to your record in the normal way and will count towards any
+             future totting-up threshold exactly as they did before.</p>
+
+          <p>In other words, this removal resets your position; it does not grant you a permanent
+             exemption. You should continue to observe all road traffic requirements, because any
+             points you receive next will be treated as a fresh matter and will not be offset by
+             the removal made under this request.</p>
+
+          <h2 class="section-head">Driving test and written authorisation</h2>
+          <p>Depending on how long the points have been held and on your driving history, you may
+             be required to take a driving test again before you resume driving. If this applies to
+             you, you will be told in writing.</p>
+
+          <p>Where a test is required, a written authorisation to drive will also be posted to the
+             address shown on your driving licence. Keep this authorisation with you and produce it
+             if asked. Do not resume driving until you have received it.</p>
+
+          <p>If you have any questions about this notice or about the payment, contact the case
+             review team quoting the reference shown at the top of this page.</p>
+
+        </div>
+
+        <footer class="doc-footer">
+          <div class="footer-row">
+            <div>Driver &amp; Vehicle Licensing Agency is an executive agency of the Department for Transport.</div>
+            <div class="right">Page 2 of 2</div>
+          </div>
+        </footer>
+
+      </div><!-- /.document -->
+    </article>
+  </section>
+</main>
+
+<!-- PDF engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- build the tiled DVLA watermark on EVERY page ---------- */
+  (function buildTiles() {
+    var html = '';
+    for (var i = 0; i < 84; i++) { html += '<span>DVLA</span>'; }
+    Array.prototype.forEach.call(document.querySelectorAll('.watermark-text'), function (host) {
+      host.innerHTML = html;
+    });
+  })();
+
+  /* ---------- live binding ---------- */
+  var bound = Array.prototype.slice.call(document.querySelectorAll('[data-bind]'));
+  var defaults = bound.map(function (f) { return f.value; });
+
+  function apply() {
+    bound.forEach(function (field) {
+      field.dataset.bind.split(/\s+/).forEach(function (id) {
+        var target = document.getElementById(id);
+        if (target) { target.textContent = field.value; }
+      });
+    });
+  }
+
+  bound.forEach(function (field) {
+    field.addEventListener('input', apply);
+    field.addEventListener('change', apply);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    bound.forEach(function (field, i) { field.value = defaults[i]; });
+    apply();
+  });
+
+  apply();
+
+  /* ---------- PDF generation: one page per sheet, single download ---------- */
+  var btn = document.getElementById('btn-pdf');
+
+  function safeName() {
+    var ref = (document.getElementById('f-reference').value || 'document')
+                .replace(/[^A-Za-z0-9._-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+    return 'penalty-point-removal-' + ref + '.pdf';
+  }
+
+  function ready() {
+    return new Promise(function (r) {
+      requestAnimationFrame(function () { requestAnimationFrame(r); });
+    });
+  }
+
+  function imagesReady(root) {
+    return Promise.all(Array.prototype.map.call(root.querySelectorAll('img'), function (im) {
+      if (im.complete && im.naturalWidth) { return Promise.resolve(); }
+      return new Promise(function (res) {
+        im.addEventListener('load', res, { once: true });
+        im.addEventListener('error', res, { once: true });
+      });
+    }));
+  }
+
+  async function renderSheet(sheet) {
+    /* Each sheet is cloned into its own off-screen holder at y=0, so the
+       capture window never has to reach past the fold. */
+    var holder = document.createElement('div');
+    holder.setAttribute('aria-hidden', 'true');
+    holder.style.cssText =
+      'position:fixed;top:0;left:-10000px;width:210mm;background:#fff;pointer-events:none;';
+
+    var clone = sheet.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.classList.add('is-exporting');
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+
+    try {
+      await ready();
+      await imagesReady(clone);
+
+      var canvas = await window.html2canvas(clone, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0
+      });
+      return canvas;
+    } finally {
+      holder.remove();
+    }
+  }
+
+  async function downloadPdf() {
+    if (!window.html2canvas || !window.jspdf) { window.print(); return; }
+
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generating\u2026';
+
+    try {
+      var sheets = Array.prototype.slice.call(document.querySelectorAll('.sheet'));
+      var jsPDF = window.jspdf.jsPDF;
+      var pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+      for (var i = 0; i < sheets.length; i++) {
+        var canvas = await renderSheet(sheets[i]);
+        if (i > 0) { pdf.addPage(); }
+
+        /* Fit to a single A4 page: cap the height so nothing spills. */
+        var w = 210;
+        var h = canvas.height * (210 / canvas.width);
+        if (h > 297) { h = 297; w = canvas.width * (297 / canvas.height); }
+
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          (210 - w) / 2,
+          0,
+          w,
+          h,
+          undefined,
+          'FAST'
+        );
+      }
+
+      pdf.save(safeName());
+    } catch (err) {
+      console.error(err);
+      alert('PDF generation failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  }
+
+  btn.addEventListener('click', downloadPdf);
+})();
+</script>
+
+</body>
+</html>
