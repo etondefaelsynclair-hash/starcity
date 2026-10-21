@@ -31,6 +31,7 @@
 
   --sheet-w:210mm;
   --sheet-h:297mm;
+  --page-scale:1;      /* set by JS so the page always fits the screen */
 
   --fs-body:14px;
   --fs-small:12px;
@@ -39,8 +40,14 @@
 
 /* ---------- 2. Reset ---------- */
 *,*::before,*::after{ box-sizing:border-box; }
+html{
+  /* stops mobile font boosting — this is what was breaking the PDF */
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
 body{
   margin:0;
+  overflow-x:hidden;
   background:var(--app-bg);
   color:var(--ink);
   font-family:"Segoe UI","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
@@ -99,7 +106,7 @@ img{ display:block; max-width:100%; }
   width:100%;
   padding:8px 10px;
   font:inherit;
-  font-size:12.5px;
+  font-size:16px;          /* 16px stops iOS zooming on focus */
   color:var(--ink);
   background:#fbfdfb;
   border:1px solid #c8d8cd;
@@ -134,9 +141,9 @@ img{ display:block; max-width:100%; }
 }
 .btn{
   flex:1;
-  padding:9px 14px;
+  padding:11px 14px;
   font:inherit;
-  font-size:12.5px;
+  font-size:13px;
   font-weight:600;
   border:1px solid transparent;
   border-radius:8px;
@@ -152,11 +159,12 @@ img{ display:block; max-width:100%; }
 .preview{
   display:flex;
   flex-direction:column;
-  gap:16px;
+  gap:0;
   min-width:0;
+  overflow:visible;
   padding-bottom:16px;
 }
-.preview-note{ font-size:11.5px; color:var(--muted); text-align:center; }
+.preview-note{ font-size:11.5px; color:var(--muted); text-align:center; margin-bottom:12px; }
 
 .sheet{
   position:relative;
@@ -164,7 +172,10 @@ img{ display:block; max-width:100%; }
   width:var(--sheet-w);
   min-height:var(--sheet-h);
   flex:0 0 auto;
-  margin:0 auto;
+  /* scaled to fit the screen; margin cancels the leftover layout height */
+  transform:scale(var(--page-scale));
+  transform-origin:top center;
+  margin:0 auto calc((var(--page-scale) - 1) * 297mm + 16px);
   background:#fff;
   border:1px solid #dfe5e1;
   border-radius:2px;
@@ -408,11 +419,10 @@ img{ display:block; max-width:100%; }
 }
 @media (max-width:620px){
   .app-header{ padding:10px 16px; }
-  .app-body{ padding:14px; }
+  .app-body{ padding:14px; gap:14px; }
   .field-row{ grid-template-columns:1fr; }
-  .preview{ overflow-x:auto; align-items:flex-start; }
+  .editor{ padding:14px; }
   .preview-note{ text-align:left; }
-  .sheet{ margin:0; }
 }
 
 /* ---------- 9. Print (fallback path) ---------- */
@@ -423,8 +433,9 @@ img{ display:block; max-width:100%; }
   .app-body{ display:block; margin:0; padding:0; max-width:none; }
   .preview{ display:block; padding:0; overflow:visible; }
   .sheet{
-    width:210mm; min-height:297mm; margin:0;
-    border:0; border-radius:0; box-shadow:none;
+    width:210mm; min-height:297mm;
+    margin:0; border:0; border-radius:0; box-shadow:none;
+    transform:none;
     break-after:page;
   }
   .sheet:last-child{ break-after:auto; }
@@ -856,6 +867,20 @@ dvia.gov.uk</div>
 (function () {
   'use strict';
 
+  var A4_PX = 793.7;   /* 210mm at 96dpi */
+
+  /* ---------- scale the preview so the page always fits the screen ---------- */
+  function fitPreview() {
+    var avail = document.documentElement.clientWidth - 32;
+    var s = Math.min(1, avail / A4_PX);
+    document.documentElement.style.setProperty('--page-scale', String(s));
+  }
+  fitPreview();
+  window.addEventListener('resize', fitPreview);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(fitPreview, 150);
+  });
+
   /* ---------- build the tiled DVLA watermark on EVERY page ---------- */
   (function buildTiles() {
     var html = '';
@@ -917,8 +942,6 @@ dvia.gov.uk</div>
   }
 
   async function renderSheet(sheet) {
-    /* Each sheet is cloned into its own off-screen holder at y=0, so the
-       capture window never has to reach past the fold. */
     var holder = document.createElement('div');
     holder.setAttribute('aria-hidden', 'true');
     holder.style.cssText =
@@ -927,6 +950,15 @@ dvia.gov.uk</div>
     var clone = sheet.cloneNode(true);
     clone.removeAttribute('id');
     clone.classList.add('is-exporting');
+
+    /* Neutralise anything the screen adds, so the PDF is identical on every
+       device regardless of viewport size or preview scaling. */
+    clone.style.transform = 'none';
+    clone.style.transformOrigin = 'top left';
+    clone.style.margin = '0';
+    clone.style.width = '210mm';
+    clone.style.minHeight = '297mm';
+
     holder.appendChild(clone);
     document.body.appendChild(holder);
 
@@ -940,7 +972,13 @@ dvia.gov.uk</div>
         useCORS: true,
         logging: false,
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        /* pin the render viewport so mobile media queries / font boosting
+           can never change the captured layout */
+        windowWidth: 1200,
+        windowHeight: Math.max(clone.offsetHeight, 1123),
+        width: clone.offsetWidth,
+        height: clone.offsetHeight
       });
       return canvas;
     } finally {
